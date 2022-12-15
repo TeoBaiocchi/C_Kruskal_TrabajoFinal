@@ -100,11 +100,8 @@ int main ()
         }
         printf("\n");
     }
-        
 
-    printf("xD\n");
-
-    //kruskal(arbol);
+    kruskal(arbol);
     return 0;
 }
 
@@ -127,7 +124,7 @@ void inserta(int vA, int vB, int costo, rama ** arbol){
     
 void inicial(tipo_nombre componente, tipo_elemento x, conjunto_CE * conjunto){
     (conjunto->nombres)[x].nombre_conjunto = componente;
-    (conjunto->nombres)[x].siguiente_elemento = 0; // como apenas se agrega la componente al grafo solo tiene un vertice y no existe el siguiente
+    (conjunto->nombres)[x].siguiente_elemento = -1; // como apenas se agrega la componente al grafo solo tiene un vertice y no existe el siguiente
     (conjunto->encabezamientos_conjunto)[componente].cuenta = 1;
     (conjunto->encabezamientos_conjunto)[componente].primer_elemento = x;
 }
@@ -145,10 +142,11 @@ void combina(tipo_nombre comp_A, tipo_nombre comp_B, conjunto_CE * conjunto){
 // dadas dos componentes de un conjunto convierte todos los vertices de la segunda componente en vertices de la primera
 void fusionar(tipo_nombre comp_A, tipo_nombre comp_B, conjunto_CE * conjunto){
     tipo_elemento elem = (conjunto->encabezamientos_conjunto)[comp_B].primer_elemento;
-        do{
+        // minetras no se haya encontrado el último elemento de la lista B
+        while((conjunto->nombres)[elem].siguiente_elemento != -1){
             (conjunto->nombres)[elem].nombre_conjunto = comp_A;
             elem = (conjunto->nombres)[elem].siguiente_elemento;
-        }while((conjunto->nombres)[elem].siguiente_elemento != 0);
+        }
         // ahora mismo elem contiene el ultimo elemento de la nueva componente
         (conjunto->nombres)[elem].nombre_conjunto = comp_A;
         (conjunto->nombres)[elem].siguiente_elemento = (conjunto->encabezamientos_conjunto)[comp_A].primer_elemento;
@@ -160,5 +158,49 @@ tipo_nombre encuentra(int vertice, conjunto_CE * conjunto){
     return ((conjunto->nombres)[vertice].nombre_conjunto);
 }
 
-// bueno, hay que seguir con esto xd
-// void kruskal(rama ** arbol)
+arista popAristaMin(int * u, int * v, rama ** arbol){
+    arista costo_min = (*arbol)->a; // obtenemos la primera arista de la lista
+    rama * auxiliar = *arbol;
+    while(auxiliar->sig != NULL){
+        auxiliar = auxiliar->sig;
+        if(auxiliar->a.costo < costo_min.costo){
+            costo_min = auxiliar->a.costo;
+        }
+    }
+    auxiliar = *arbol;
+    //buscamos el elemento previo a la arista de menor costo 
+    //en caso de que el primer elemento sea el de menor costo lo borramos sin realizar otro cambio
+    if(auxiliar->a.costo == costo_min.costo){
+        *arbol = (*arbol)->sig;
+        free(auxiliar); // contiene al primer elemento
+    }else{
+        while(auxiliar->sig->a.costo != costo_min.costo){
+            auxiliar = auxiliar->sig;
+        }
+        rama * borrar = auxiliar->sig;
+        auxiliar->sig = auxiliar->sig->sig;//al elemento previo del elemento a borrar  lo anexamos con el siguiente al que se va a borrar
+        free(borrar);
+    }
+    return costo_min;
+}
+
+void kruskal(rama ** arbol){
+    int comp_n, comp_siguiente, comp_u, comp_v;
+    conjunto_CE *componentes = malloc(sizeof(conjunto_CE));
+    rama * resultado = malloc(sizeof(rama));
+    comp_siguiente = 0;
+    comp_n = VERTICES;
+    arista arista_minima;
+    for(int i = 0; i<VERTICES; i++){
+        comp_siguiente++;
+        inicial(comp_siguiente, i, componentes);
+    }
+    while(comp_n > 1){
+        arista_minima = popAristaMin(&comp_u, &comp_v,arbol);
+        if(comp_u != comp_v){
+            combina(comp_u, comp_v, componentes);
+            comp_n--;
+            inserta(arista_minima.u, arista_minima.v, arista_minima.costo, resultado);
+        }
+    }
+}
